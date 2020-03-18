@@ -86,19 +86,19 @@
 
 - name: Check if metabase container needs an update
   shell: docker ps -a | grep 'metabase' | awk '{print $ 2}'
-  register: current_metabase_conatiner
+  register: current_metabase_container
   ignore_errors: true
 
 - name: Remove exited containers
   become: yes
   shell: docker rm $(docker ps -f 'status=exited' | grep 'metabase' | awk '{print $ 1}')
   ignore_errors: true
-  when: passive is not defined or passive !='yes' or current_metabase_conatiner.stdout != "{{ metabase_docker_image }}"
+  when: current_metabase_container.stdout != "{{ metabase_docker_image }}"
 
 - name: Remove stopped containners
   command: docker-compose -f {{ metabase_docker_compose_location }} rm
   ignore_errors: true
-  when: passive is not defined or passive !='yes' or current_metabase_conatiner.stdout != "{{ metabase_docker_image }}"
+  when: current_metabase_container.stdout != "{{ metabase_docker_image }}"
 
 - name: Remove dangling images
   become: yes
@@ -109,6 +109,7 @@
   command: docker-compose -f {{ metabase_docker_compose_location }} up -d
   tags:
   - without_ssl
+  when: passive is not defined or passive !='yes'
 
 - name: Check whether required properties provided for metabase with ssl
   fail:
@@ -160,7 +161,3 @@
     - name: save iptables
       command: service iptables save
 
-- name: Stop metabase docker conatainer on passive machine
-  command: docker-compose -f {{ metabase_docker_compose_location }} stop
-  when: passive is defined and passive=='yes'
-  ignore_errors: true
