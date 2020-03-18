@@ -89,6 +89,11 @@
   register: current_metabase_container
   ignore_errors: true
 
+- name:  Stop the running container when there is upgrade in version
+  shell: docker stop $(docker ps -f 'status=running' | grep 'metabase' | awk '{print $ 1}')
+  ignore_errors: true
+  when: current_metabase_conatiner.stdout != "{{ metabase_docker_image }}"
+
 - name: Remove exited containers
   become: yes
   shell: docker rm $(docker ps -f 'status=exited' | grep 'metabase' | awk '{print $ 1}')
@@ -109,7 +114,7 @@
   command: docker-compose -f {{ metabase_docker_compose_location }} up -d
   tags:
   - without_ssl
-  when: passive is not defined or passive !='yes'
+  when: (passive is not defined or passive !='yes') and ((current_metabase_container|length == 0) or (current_metabase_container.stdout != "{{ metabase_docker_image }}"))
 
 - name: Check whether required properties provided for metabase with ssl
   fail:
@@ -124,7 +129,7 @@
   shell: |
     /opt/bahmni-mart/bin/pemtojks.sh {{ bahmni_lets_encrypt_cert_dir }} {{ metabase_keystore_password }}
     docker-compose -f {{ metabase_ssl_docker_compose_location }} up -d
-  when: passive is not defined or passive !='yes'
+  when: (passive is not defined or passive !='yes') and ((current_metabase_container|length == 0) or (current_metabase_container.stdout != "{{ metabase_docker_image }}"))
   tags:
   - lets_encrypt_ssl
 
@@ -141,7 +146,7 @@
   shell: |
     cp {{ custom_keystore_location }} /etc/metabase/ssl/metabase_ssl.jks
     docker-compose -f {{ metabase_ssl_docker_compose_location }} up -d
-  when: passive is not defined or passive !='yes'
+  when: (passive is not defined or passive !='yes') and ((current_metabase_container|length == 0) or (current_metabase_container.stdout != "{{ metabase_docker_image }}"))
   tags:
   - custom_ssl
 
