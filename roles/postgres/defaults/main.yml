@@ -9,3 +9,10 @@ postgres92_version: 9.2
 postgres96_version: 9.6
 postgres92_bin_version: 92
 postgres96_bin_version: 96
+postgres_password: "{{ postgres_password }}"
+postgresql_data_dir: /var/lib/pgsql
+postgres_hba_configurations:
+  # TYPE  DATABASE        USER            ADDRESS                 METHOD
+  - 'local   all             all                                    md5'
+  - 'host    all             all             0.0.0.0/0               md5'
+  - 'host    all             all             ::0/0                   md5'

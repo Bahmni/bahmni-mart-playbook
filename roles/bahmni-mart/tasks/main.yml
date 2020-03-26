@@ -1,4 +1,10 @@
 
+- name: set authentication parameter from the tag
+  set_fact:
+    authentication: true
+  tags:
+  - authentication
+
 - name: Check if bahmni-mart rpm is installed
   yum:
     list: bahmni-mart
@@ -45,13 +51,27 @@
   postgresql_user:
     name: "{{ analytics_db_user }}"
     password: "{{ analytics_db_password }}"
-  when: passive is not defined or passive !='yes'
+  when: (passive is not defined or passive !='yes') and authentication is not defined or authentication != true
+
+- name: Create bahmni-mart DB User with authentication
+  postgresql_user:
+    name: "{{ analytics_db_user }}"
+    password: "{{ analytics_db_password }}"
+    login_password: "{{ postgres_password }}"
+  when: (passive is not defined or passive !='yes') and  authentication is defined and authentication == true
 
 - name: Create bahmni-mart DB
   postgresql_db:
     name: "{{ analytics_db_name }}"
     owner: "{{ analytics_db_user }}"
-  when: passive is not defined or passive !='yes'
+  when: (passive is not defined or passive !='yes') and authentication is not defined or authentication != true
+
+- name: Create bahmni-mart DB with authentication
+  postgresql_db:
+    name: "{{ analytics_db_name }}"
+    owner: "{{ analytics_db_user }}"
+    login_password: "{{ postgres_password }}"
+  when: (passive is not defined or passive !='yes') and authentication is defined and authentication == true
 
 - name: Create backup directory
   file:
