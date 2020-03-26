@@ -4,6 +4,9 @@ metabase_db_user: metabase
 analytics_db_name: analytics
 metabase_db_name: metabase
 metabase_with_ssl: false
+postgres_password:
+analytics_db_password:
+
 # When metabase_with_ssl is true you can choose for one of the following
   # lets'encrypt ssl: where bahmni_lets_encrypt_cert_dir and metabase_keystore_password are mandatory
   # custom ssl: where primary_custom_keystore_location and metabase_keystore_password are mandatory
