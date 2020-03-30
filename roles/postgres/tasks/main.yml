@@ -1,10 +1,14 @@
 # This is copied from bahmni-playbooks and will be deleted after merged with bahmni.
 
+- name: set authentication parameter from the tag
+  set_fact:
+    authentication: true
+  tags:
+  - authentication
 
 - name: Check Bahmni-installer version on command box
   local_action: command rpm -q bahmni-installer --qf "%{VERSION}\n"
   register: bahmniVersion
-
 
 - name: Evaluate Bahmni Version
   set_fact:
@@ -46,13 +50,36 @@
 - name: Install postgresql-contrib
   yum: name="postgresql{{postgres_bin_version}}-contrib" state=present
 
+- name: Check if PostgreSQL database is initialized.
+  stat:
+    path: "{{ postgresql_data_dir }}/{{ postgres_version }}/data/base"
+  register: pgdata_dir_version
+  when: inventory_hostname in groups['bahmni-mart-db'] or authentication is defined and authentication == true
+
+- name: Copy initdbfile
+  template:
+    src=initdbfile.j2
+    dest=/tmp/initdbfile
+    mode=644
+    owner=postgres
+  when: not pgdata_dir_version.stat.exists and authentication is defined and authentication == true
+
 - name: Initiate database for postgresql 9.2
   command: service postgresql-{{ postgres_version }} initdb creates=/var/lib/pgsql/data/postgresql.conf
   when: isBahmniLessthan92 and postgres_version == 9.2
 
 - name: Initiate database for postgresql 9.6
   command: /usr/pgsql-{{postgres_version}}/bin/postgresql{{postgres_bin_version}}-setup initdb creates=/var/lib/pgsql/{{postgres_version}}/data/postgresql.conf
-  when: isBahmniLessthan92 == false and postgres_version == 9.6
+  when: isBahmniLessthan92 == false and postgres_version == 9.6 and authentication is not defined or authentication != true
+
+- name: Initiate database for postgresql 9.6 with authentication
+  command: /usr/pgsql-{{postgres_version}}/bin/initdb --pgdata=/var/lib/pgsql/{{postgres_version}}/data --username=postgres --pwfile='/tmp/initdbfile'
+  become_user: postgres
+  when: isBahmniLessthan92 == false and postgres_version == 9.6 and not pgdata_dir_version.stat.exists and authentication is defined and authentication == true
+
+- name: remove initdbfile
+  command: rm -f /tmp/initdbfile
+  when: not pgdata_dir_version.stat.exists and authentication is defined and authentication == true
 
 - name: Copy postgresql conf
   template:
@@ -70,6 +97,7 @@
     state: present
     backrefs: yes
     line: local  all    all   trust
+  when: authentication is not defined or authentication != true
 
 - name: insert/update postgres config after IPv4 local connections line
   lineinfile:
@@ -78,6 +106,7 @@
     state: present
     backrefs: yes
     line: host  all    all   127.0.0.1/32 trust
+  when: authentication is not defined or authentication != true
 
 - name: insert/update postgres config after IPv6 local connections line
   lineinfile:
@@ -86,7 +115,13 @@
     state: present
     backrefs: yes
     line: host  all    all   ::1/128 trust
+  when: authentication is not defined or authentication != true
 
+- name: Configure connection rules and postgres
+  template: src={{ item.src }} dest={{ postgresql_data_dir }}/{{ postgres_version }}/data/{{ item.src | regex_replace(".j2") }}
+  with_items:
+    - { src: "pg_hba.conf.j2" }
+  when: not pgdata_dir_version.stat.exists and authentication is defined and authentication == true
 
 - name: Removing recovery config file from master db
   file:
@@ -125,8 +160,14 @@
     enabled=yes
     state=started
 
+- name: Create postgres user with authentication
+  postgresql_user: name={{ postgres_user }} role_attr_flags=CREATEDB,NOCREATEROLE,SUPERUSER,REPLICATION login_password={{ postgres_password }}
+  sudo_user: postgres
+  when: postgres_user is defined and (inventory_hostname in groups['bahmni-mart-db'] or inventory_hostname in groups['metabase-db']) and authentication is defined and authentication == true
+# creating user only in master dbs. User creation will be replicated in slave.
+
 - name: Create postgres user
   postgresql_user: name={{ postgres_user }} role_attr_flags=CREATEDB,NOCREATEROLE,SUPERUSER,REPLICATION
   sudo_user: postgres
-  when: postgres_user is defined and (inventory_hostname in groups['bahmni-mart-db'] or inventory_hostname in groups['metabase-db'])
+  when: postgres_user is defined and (inventory_hostname in groups['bahmni-mart-db'] or inventory_hostname in groups['metabase-db']) and authentication is not defined or authentication != true
 # creating user only in master dbs. User creation will be replicated in slave.

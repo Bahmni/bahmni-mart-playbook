@@ -1,3 +1,8 @@
+- name: set authentication parameter from the tag
+  set_fact:
+    authentication: true
+  tags:
+    - authentication
 
 - name: Install and start docker
   include_role:
@@ -52,14 +57,27 @@
   postgresql_user:
     name: "{{ metabase_db_user }}"
     password: "{{ metabase_db_password }}"
-  when: passive is not defined or passive !='yes'
+  when: (passive is not defined or passive !='yes') and authentication is not defined or authentication != true
 
+- name: Create metabase DB User with authentication
+  postgresql_user:
+    name: "{{ metabase_db_user }}"
+    password: "{{ metabase_db_password }}"
+    login_password: "{{ postgres_password }}"
+  when: (passive is not defined or passive !='yes') and  authentication is defined and authentication == true
 
 - name: Create metabase DB
   postgresql_db:
     name: "{{ metabase_db_name }}"
     owner: "{{ metabase_db_user }}"
-  when: passive is not defined or passive !='yes'
+  when: (passive is not defined or passive !='yes') and authentication is not defined or authentication != true
+
+- name: Create metabase DB with authentication
+  postgresql_db:
+    name: "{{ metabase_db_name }}"
+    owner: "{{ metabase_db_user }}"
+    login_password: "{{ postgres_password }}"
+  when: (passive is not defined or passive !='yes') and  authentication is defined and authentication == true
 
 - name: Create backup directory
   file:
