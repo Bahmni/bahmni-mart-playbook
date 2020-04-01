@@ -70,7 +70,7 @@
 
 - name: Initiate database for postgresql 9.6
   command: /usr/pgsql-{{postgres_version}}/bin/postgresql{{postgres_bin_version}}-setup initdb creates=/var/lib/pgsql/{{postgres_version}}/data/postgresql.conf
-  when: isBahmniLessthan92 == false and postgres_version == 9.6 and authentication is not defined or authentication != true
+  when: isBahmniLessthan92 == false and postgres_version == 9.6 and (authentication is not defined or authentication != true)
 
 - name: Initiate database for postgresql 9.6 with authentication
   command: /usr/pgsql-{{postgres_version}}/bin/initdb --pgdata=/var/lib/pgsql/{{postgres_version}}/data --username=postgres --pwfile='/tmp/initdbfile'
@@ -169,5 +169,5 @@
 - name: Create postgres user
   postgresql_user: name={{ postgres_user }} role_attr_flags=CREATEDB,NOCREATEROLE,SUPERUSER,REPLICATION
   sudo_user: postgres
-  when: postgres_user is defined and (inventory_hostname in groups['bahmni-mart-db'] or inventory_hostname in groups['metabase-db']) and authentication is not defined or authentication != true
+  when: postgres_user is defined and (inventory_hostname in groups['bahmni-mart-db'] or inventory_hostname in groups['metabase-db']) and (authentication is not defined or authentication != true)
 # creating user only in master dbs. User creation will be replicated in slave.
