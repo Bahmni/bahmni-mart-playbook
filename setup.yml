@@ -6,7 +6,8 @@ metabase_db_name: metabase
 metabase_with_ssl: false
 postgres_password:
 analytics_db_password:
-
+# This parameter is specific to msf and should be updated at the point of release to fetch the latest stable artifact
+msf_release_version: ""
 # When metabase_with_ssl is true you can choose for one of the following
   # lets'encrypt ssl: where bahmni_lets_encrypt_cert_dir and metabase_keystore_password are mandatory
   # custom ssl: where primary_custom_keystore_location and metabase_keystore_password are mandatory

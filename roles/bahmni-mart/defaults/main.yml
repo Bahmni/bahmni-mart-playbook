@@ -1,5 +1,5 @@
 bahmni_mart_version: "{{ bahmni_mart_version }}"
-bahmni_mart_url: "https://s3.ap-south-1.amazonaws.com/bahmni-mart/rpms/bahmni-mart-{{bahmni_mart_version}}.noarch.rpm"
+bahmni_mart_url: "https://stable.s3.ap-south-1.amazonaws.com/msf-release-{{msf_release_version}}/bahmni-mart-{{bahmni_mart_version}}-{{msf_release_version}}.noarch.rpm"
 openmrs_db_name: openmrs
 openmrs_db_username: openmrs-user
 openmrs_db_password: "{{ openmrs_db_password }}"
