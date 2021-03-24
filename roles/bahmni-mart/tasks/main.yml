@@ -17,9 +17,15 @@
   when: installed_bahmni_mart.results|length !=0
   ignore_errors: true
 
+- name: Check if remote url is valid
+  yum: name="{{ bahmni_mart_url }}" state=present
+  register: isUrlValid
+  when: installed_bahmni_mart.results|length !=0
+  ignore_errors: true
+
 - name: Uninstall bahmni-mart rpm if update is required
   yum: name="bahmni-mart" state=absent
-  when: installed_bahmni_mart.results|length !=0 and current_version.stdout != "{{ bahmni_mart_version }}"
+  when: installed_bahmni_mart.results|length !=0 and current_version.stdout != "{{ bahmni_mart_version }}" and isUrlValid.failed == false
   register: uninstalled_bahmni_mart
 
 - name: Install bahmni-mart using URL
